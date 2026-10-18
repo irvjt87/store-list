@@ -1,874 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Family Notes & Project Sync</title>
-  
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231e1e1e'/><text x='50%' y='68%' font-size='60' text-anchor='middle'>📋</text></svg>">
-
-  <!-- PWA Web App Settings -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#121212">
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkZhbWlseSBOb3RlcyAmIFByb2plY3RzIiwKICAic2hvcnRfbmFtZSI6ICJGYW1Ob3RlcyIsCiAgInN0YXJ0X3VybCI6ICIuL2luZGV4Lmh0bWwiLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiCn0=">
-
+  <title>Compact Store List</title>
   <style>
-    /* Global Reset & Base Styling */
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background-color: #121212; color: #e0e0e0; padding: 8px; max-width: 520px; margin: 0 auto; font-size: 13px; line-height: 1.4; min-height: 100vh; display: flex; flex-direction: column; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #121212; color: #e0e0e0; padding: 8px; max-width: 480px; margin: 0 auto; font-size: 13px; }
     
-    /* Utility Classes */
-    .hidden { display: none !important; }
-    .flex-1 { flex: 1; }
+    /* Header Controls */
+    .bar { display: flex; gap: 6px; margin-bottom: 8px; }
+    select, input, button { font-size: 13px; padding: 6px 8px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #fff; outline: none; }
+    select { flex: 1; font-weight: bold; background: #2a2a2a; }
+    .btn { background: #2c6bed; color: white; border: none; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-danger { background: #cf6679; color: #000; }
     
-    /* Header & Navigation Bar */
-    .header { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #2a2a2a; }
-    .title-group { display: flex; align-items: center; gap: 6px; }
-    .app-title { font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px; }
+    /* Add Form */
+    .add-form { display: flex; gap: 4px; background: #1e1e1e; padding: 6px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #2a2a2a; }
+    .add-form input[name="bin"] { width: 65px; text-transform: uppercase; text-align: center; }
+    .add-form input[name="item"] { flex: 1; }
     
-    /* Sync Status Badge */
-    .sync-badge { font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; }
-    .sync-badge.online { background: rgba(0, 230, 118, 0.15); color: #00e676; border-color: rgba(0, 230, 118, 0.3); }
-    .sync-badge.syncing { background: rgba(255, 179, 0, 0.15); color: #ffb300; border-color: rgba(255, 179, 0, 0.3); }
-    .sync-badge.local { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
-    .sync-badge.error { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border-color: rgba(244, 63, 94, 0.3); }
-    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; }
-    .sync-dot.pulse { animation: pulse-animation 1.2s infinite ease-in-out; }
-    @keyframes pulse-animation { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-
-    /* Buttons & Inputs */
-    select, input, button, textarea { font-size: 13px; padding: 7px 9px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #fff; outline: none; transition: border-color 0.15s ease, background-color 0.15s ease; }
-    select:focus, input:focus, textarea:focus { border-color: #2c6bed; }
-    button { cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; user-select: none; }
-    .btn { background: #2c6bed; color: #fff; border: none; }
-    .btn:active { opacity: 0.85; transform: scale(0.98); }
-    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #3d3d3d; }
-    .btn-danger { background: #cf6679; color: #000; border: none; }
-    .btn-icon { background: none; border: none; color: #888; padding: 4px; font-size: 14px; border-radius: 4px; }
-    .btn-icon:hover, .btn-icon:active { color: #fff; background: #2a2a2a; }
-
-    /* Add Note Panel */
-    .add-card { background: #1e1e1e; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #2a2a2a; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    /* List Layout */
+    .list { display: flex; flex-direction: column; gap: 4px; }
+    .row { display: flex; align-items: center; gap: 6px; background: #1e1e1e; padding: 6px 8px; border-radius: 6px; border-left: 3px solid #00e676; }
+    .row.unneeded { border-left-color: #444; opacity: 0.45; }
     
-    /* Auto-expanding Textarea */
-    .auto-textarea { width: 100%; min-height: 42px; max-height: 200px; resize: none; overflow-y: auto; background: #121212; border: 1px solid #333; color: #fff; border-radius: 6px; padding: 8px; line-height: 1.4; display: block; margin-bottom: 8px; }
-    .auto-textarea::placeholder { color: #666; }
-
-    /* Kid Selector Chips */
-    .section-label { font-size: 11px; text-transform: uppercase; color: #888; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px; }
-    .chips-container { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-    .chip { font-size: 11px; padding: 4px 8px; border-radius: 12px; background: #2a2a2a; color: #aaa; border: 1px solid #3a3a3a; cursor: pointer; transition: all 0.15s ease; user-select: none; }
-    .chip.selected { font-weight: 700; color: #000; border-color: transparent; }
+    /* Data Fields */
+    .bin { font-family: monospace; font-weight: bold; font-size: 11px; background: #2a2a2a; color: #ffb74d; padding: 2px 5px; border-radius: 4px; min-width: 42px; text-align: center; flex-shrink: 0; }
+    .item-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
-    /* Controls / Filter Bar */
-    .filter-bar { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    .controls-row { display: flex; gap: 6px; }
-    .controls-row select, .controls-row input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 7px; background: #1a1a1a; }
+    /* Toggle Switch */
+    .toggle { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; border: none; cursor: pointer; min-width: 55px; text-align: center; flex-shrink: 0; }
+    .toggle.need { background: #00e676; color: #000; }
+    .toggle.done { background: #333; color: #888; }
     
-    /* Notes List View */
-    .list { display: flex; flex-direction: flex-col; flex-direction: column; gap: 6px; }
-    .note-card { background: #1e1e1e; padding: 9px 10px; border-radius: 8px; border: 1px solid #2a2a2a; border-left: 4px solid #00e676; display: flex; flex-direction: column; gap: 6px; position: relative; transition: opacity 0.2s ease, border-color 0.2s ease; }
-    
-    /* Status Visual Borders */
-    .note-card.status-open { border-left-color: #00e676; }
-    .note-card.status-in_progress { border-left-color: #ffb300; }
-    .note-card.status-complete { border-left-color: #0288d1; opacity: 0.65; }
-
-    .note-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-    .note-body { color: #eee; word-break: break-word; white-space: pre-wrap; font-size: 13px; line-height: 1.45; }
-    .note-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 2px; pt: 4px; border-top: 1px solid #262626; padding-top: 6px; }
-
-    /* Status Pill Toggle */
-    .status-pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: opacity 0.15s ease; flex-shrink: 0; }
-    .status-pill.open { background: #00e676; color: #000; }
-    .status-pill.in_progress { background: #ffb300; color: #000; }
-    .status-pill.complete { background: #0288d1; color: #fff; }
-
-    /* Kid Badges */
-    .kid-badges { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
-    .kid-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; color: #000; letter-spacing: -0.2px; }
-
-    .actions { display: flex; gap: 2px; align-items: center; }
-    .timestamp { font-size: 10px; color: #666; font-family: monospace; }
-
-    /* Modals & Overlay */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 12px; }
-    .modal-card { background: #1e1e1e; border: 1px solid #333; border-radius: 10px; width: 100%; max-width: 440px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
-    .modal-header { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-    .form-group { margin-bottom: 10px; }
-    .form-group label { display: block; font-size: 11px; font-weight: 600; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
-    .form-group input { width: 100%; }
-
-    /* Empty state */
-    .empty-state { text-align: center; padding: 30px 10px; color: #666; font-style: italic; background: #181818; border-radius: 8px; border: 1px dashed #2a2a2a; }
-
-    /* Toast Notification */
-    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #2c6bed; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
-    #toast.show { opacity: 1; }
+    .actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .icon-btn { background: none; border: none; color: #888; padding: 2px 4px; font-size: 12px; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation & Sync Header -->
-  <header class="header">
-    <div class="title-group">
-      <span class="app-title">📋 Family Tracker</span>
-      <div id="syncBadge" class="sync-badge local" onclick="openSettings()" title="Click to configure GitHub sync">
-        <span class="sync-dot"></span>
-        <span id="syncText">Local Only</span>
-      </div>
-    </div>
-    <div style="display: flex; gap: 4px;">
-      <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="triggerManualSync()" title="Sync now with GitHub">🔄 Sync</button>
-      <button class="btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="openSettings()" title="GitHub Settings">⚙️</button>
-    </div>
-  </header>
-
-  <!-- Add Note Section -->
-  <section class="add-card">
-    <textarea id="newNoteText" class="auto-textarea" placeholder="Add new note, task, or project requirement..." rows="1" oninput="autoExpandTextarea(this)"></textarea>
-    
-    <div class="section-label">Tag Children (Age Order: Oldest → Youngest):</div>
-    <div id="addKidsChips" class="chips-container">
-      <!-- Dynamically rendered kids chips -->
-    </div>
-
-    <div style="display: flex; gap: 6px; align-items: center; justify-content: space-between;">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span class="section-label" style="margin-bottom:0;">Status:</span>
-        <select id="newNoteStatus" style="padding: 4px 6px; font-size: 12px;">
-          <option value="open">🟢 Open</option>
-          <option value="in_progress">🟡 In Progress</option>
-          <option value="complete">🔵 Complete</option>
-        </select>
-      </div>
-      <button class="btn" onclick="addNote()">+ Add Note</button>
-    </div>
-  </section>
-
-  <!-- Filters & Sorting Bar -->
-  <section class="filter-bar">
-    <div class="controls-row">
-      <select id="filterKid" onchange="renderNotes()">
-        <option value="ALL">All Kids (Violet → Alex)</option>
-        <option value="Violet">Violet (Oldest)</option>
-        <option value="Rodney">Rodney</option>
-        <option value="Benji">Benji</option>
-        <option value="Shawn">Shawn</option>
-        <option value="Kendrick">Kendrick</option>
-        <option value="Alex">Alex (Youngest)</option>
-        <option value="UNTAGGED">No Tagged Kids</option>
-      </select>
-
-      <select id="filterStatus" onchange="renderNotes()">
-        <option value="ALL">All Statuses</option>
-        <option value="open">Open Only</option>
-        <option value="in_progress">In Progress Only</option>
-        <option value="complete">Complete Only</option>
-      </select>
-    </div>
-
-    <div class="controls-row">
-      <select id="sortBy" onchange="renderNotes()">
-        <option value="kid_oldest">Sort: Oldest Child First</option>
-        <option value="kid_youngest">Sort: Youngest Child First</option>
-        <option value="status">Sort: By Status (Open → Complete)</option>
-        <option value="date_newest">Sort: Date Created (Newest)</option>
-        <option value="date_oldest">Sort: Date Created (Oldest)</option>
-      </select>
-
-      <input type="text" id="searchQuery" placeholder="🔍 Search notes..." oninput="renderNotes()" autocomplete="off">
-    </div>
-  </section>
-
-  <!-- Active Notes List -->
-  <main id="notesList" class="list"></main>
-
-  <!-- GitHub Settings Modal -->
-  <div id="settingsModal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>⚙️ GitHub Fine-Grained Token Sync</span>
-        <button class="btn-icon" onclick="closeSettings()">✕</button>
-      </div>
-      
-      <p style="font-size: 11px; color: #aaa; margin-bottom: 12px;">
-        Connect a public or private GitHub repository using a Personal Access Token (PAT) for automatic live updates across desktop and mobile devices.
-      </p>
-
-      <div class="form-group">
-        <label>Fine-Grained PAT Token</label>
-        <input type="password" id="cfgToken" placeholder="github_pat_11A..." autocomplete="off">
-      </div>
-
-      <div class="form-group">
-        <label>Repository Owner / Username</label>
-        <input type="text" id="cfgOwner" placeholder="e.g. jdoe" autocomplete="off">
-      </div>
-
-      <div class="form-group">
-        <label>Repository Name</label>
-        <input type="text" id="cfgRepo" placeholder="e.g. family-notes-repo" autocomplete="off">
-      </div>
-
-      <div class="form-group">
-        <label>File Path in Repository</label>
-        <input type="text" id="cfgPath" placeholder="notes_db.json" value="notes_db.json" autocomplete="off">
-      </div>
-
-      <div class="form-group">
-        <label>Branch</label>
-        <input type="text" id="cfgBranch" placeholder="main" value="main" autocomplete="off">
-      </div>
-
-      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
-        <button class="btn-secondary" onclick="testGitHubConnection()">Test Connection</button>
-        <button class="btn" onclick="saveSettings()">Save & Sync</button>
-      </div>
-    </div>
+  <div class="bar">
+    <select id="storeSelect" onchange="switchStore()"></select>
+    <button class="btn" onclick="addStore()">+ Store</button>
   </div>
 
-  <!-- Edit Note Modal -->
-  <div id="editModal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>✏️ Edit Note</span>
-        <button class="btn-icon" onclick="closeEditModal()">✕</button>
-      </div>
+  <form class="add-form" onsubmit="addItem(event)">
+    <input type="text" id="newBin" name="bin" placeholder="Bin/Aisle" autocomplete="off">
+    <input type="text" id="newItem" name="item" placeholder="New Item Name..." required autocomplete="off">
+    <button type="submit" class="btn">Add</button>
+  </form>
 
-      <input type="hidden" id="editNoteId">
-      
-      <div class="form-group">
-        <label>Note Content</label>
-        <textarea id="editNoteText" class="auto-textarea" rows="3" oninput="autoExpandTextarea(this)"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Tagged Children</label>
-        <div id="editKidsChips" class="chips-container"></div>
-      </div>
-
-      <div class="form-group">
-        <label>Status</label>
-        <select id="editNoteStatus" style="width:100%;">
-          <option value="open">🟢 Open</option>
-          <option value="in_progress">🟡 In Progress</option>
-          <option value="complete">🔵 Complete</option>
-        </select>
-      </div>
-
-      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
-        <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
-        <button class="btn" onclick="saveEditedNote()">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Delete Confirm Modal -->
-  <div id="deleteModal" class="modal-overlay hidden">
-    <div class="modal-card" style="max-width:340px;">
-      <div class="modal-header">
-        <span>🗑️ Delete Note</span>
-        <button class="btn-icon" onclick="closeDeleteModal()">✕</button>
-      </div>
-      <p style="margin-bottom: 14px; font-size: 13px; color: #ccc;">Are you sure you want to permanently delete this note?</p>
-      <input type="hidden" id="deleteNoteId">
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-        <button class="btn-danger btn" onclick="confirmDeleteNote()">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Notification Toast -->
-  <div id="toast">Notice message</div>
+  <div id="itemList" class="list"></div>
 
   <script>
-    /**
-     * CHILD DEFINITIONS & AGE ORDER
-     * Array index dictates age ranking from Oldest (0) to Youngest (5).
-     */
-    const CHILDREN = [
-      { name: "Violet", index: 0, color: "#f472b6" },   /* Pink */
-      { name: "Rodney", index: 1, color: "#38bdf8" },   /* Light Blue */
-      { name: "Benji",  index: 2, color: "#4ade80" },   /* Light Green */
-      { name: "Shawn",  index: 3, color: "#facc15" },   /* Yellow */
-      { name: "Kendrick", index: 4, color: "#fb923c" }, /* Orange */
-      { name: "Alex",   index: 5, color: "#c084fc" }    /* Purple */
-    ];
-
-    /**
-     * APPLICATION STATE ARCHITECTURE
-     */
-    let state = {
-      notes: [],
-      config: {
-        token: "",
-        owner: "",
-        repo: "",
-        path: "notes_db.json",
-        branch: "main"
-      },
-      sha: null,
-      syncing: false,
-      selectedKidsForNew: [],
-      selectedKidsForEdit: []
+    // System Data Architecture
+    let db = JSON.parse(localStorage.getItem('shopping_db')) || {
+      activeStore: "Walmart",
+      stores: {
+        "Walmart": [
+          { id: 1, bin: "A12", name: "Cereal", needed: true },
+          { id: 2, bin: "B4", name: "Milk", needed: true },
+          { id: 3, bin: "A1", name: "Bananas", needed: false }
+        ],
+        "Menards": [
+          { id: 4, bin: "14B", name: "Screws 1-1/2in", needed: true }
+        ]
+      }
     };
 
-    /**
-     * LOCAL STORAGE INITIALIZATION & MIGRATION
-     */
+    function save() {
+      localStorage.setItem('shopping_db', JSON.stringify(db));
+    }
+
     function init() {
-      // Load saved GitHub credentials
-      const savedConfig = localStorage.getItem('fn_github_config');
-      if (savedConfig) {
-        try { state.config = { ...state.config, ...JSON.parse(savedConfig) }; } catch(e){}
-      }
+      const select = document.getElementById('storeSelect');
+      select.innerHTML = '';
+      Object.keys(db.stores).forEach(store => {
+        const opt = document.createElement('option');
+        opt.value = store;
+        opt.textContent = store;
+        if (store === db.activeStore) opt.selected = true;
+        select.appendChild(opt);
+      });
+      renderList();
+    }
 
-      // Load cached local notes database
-      const savedNotes = localStorage.getItem('fn_notes_db');
-      if (savedNotes) {
-        try { state.notes = JSON.parse(savedNotes); } catch(e){}
-      } else {
-        // Seed default starter sample note
-        state.notes = [{
-          id: Date.now(),
-          text: "Welcome to Family Note Tracker! Tag kids, update status, and configure GitHub PAT sync in settings.",
-          kids: ["Violet", "Benji"],
-          status: "open",
-          createdAt: new Date().toISOString()
-        }];
-        saveLocalNotes();
-      }
+    function switchStore() {
+      db.activeStore = document.getElementById('storeSelect').value;
+      save();
+      renderList();
+    }
 
-      renderKidsChips('addKidsChips', state.selectedKidsForNew, toggleNewKidTag);
-      renderNotes();
-      updateSyncBadge('local', 'Local Only');
-
-      // Attempt remote fetch if configured
-      if (isGitHubConfigured()) {
-        triggerManualSync();
-        // Background polling interval every 15 seconds
-        setInterval(autoBackgroundSync, 15000);
-      }
-
-      // Unregister legacy service workers if present
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    function addStore() {
+      const name = prompt("Enter new store name:");
+      if (name && !db.stores[name]) {
+        db.stores[name] = [];
+        db.activeStore = name;
+        save();
+        init();
       }
     }
 
-    function saveLocalNotes() {
-      localStorage.setItem('fn_notes_db', JSON.stringify(state.notes));
-    }
-
-    function isGitHubConfigured() {
-      return state.config.token && state.config.owner && state.config.repo;
-    }
-
-    /**
-     * AUTO EXPANDING TEXTAREA UTILITY
-     */
-    function autoExpandTextarea(element) {
-      element.style.height = 'auto';
-      element.style.height = (element.scrollHeight) + 'px';
-    }
-
-    /**
-     * KID CHIP RENDERER & TOGGLES
-     */
-    function renderKidsChips(containerId, selectedArray, toggleFn) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = CHILDREN.map(child => {
-        const isSelected = selectedArray.includes(child.name);
-        const style = isSelected 
-          ? `background-color: ${child.color}; color: #000; font-weight: bold; border-color: ${child.color};` 
-          : ``;
-        return `<div class="chip ${isSelected ? 'selected' : ''}" style="${style}" onclick="${toggleFn.name}('${child.name}')">${child.name}</div>`;
-      }).join('');
-    }
-
-    function toggleNewKidTag(kidName) {
-      const idx = state.selectedKidsForNew.indexOf(kidName);
-      if (idx > -1) state.selectedKidsForNew.splice(idx, 1);
-      else state.selectedKidsForNew.push(kidName);
-      renderKidsChips('addKidsChips', state.selectedKidsForNew, toggleNewKidTag);
-    }
-
-    function toggleEditKidTag(kidName) {
-      const idx = state.selectedKidsForEdit.indexOf(kidName);
-      if (idx > -1) state.selectedKidsForEdit.splice(idx, 1);
-      else state.selectedKidsForEdit.push(kidName);
-      renderKidsChips('editKidsChips', state.selectedKidsForEdit, toggleEditKidTag);
-    }
-
-    /**
-     * NOTE CRUD OPERATIONS
-     */
-    function addNote() {
-      const textarea = document.getElementById('newNoteText');
-      const text = textarea.value.trim();
-      const status = document.getElementById('newNoteStatus').value;
-
-      if (!text) {
-        showToast("Please enter a note description.");
-        return;
-      }
-
-      const newNote = {
+    function addItem(e) {
+      e.preventDefault();
+      const binInput = document.getElementById('newBin');
+      const itemInput = document.getElementById('newItem');
+      
+      const newItem = {
         id: Date.now(),
-        text: text,
-        kids: [...state.selectedKidsForNew],
-        status: status,
-        createdAt: new Date().toISOString()
+        bin: binInput.value.trim().toUpperCase() || "--",
+        name: itemInput.value.trim(),
+        needed: true
       };
 
-      state.notes.unshift(newNote);
-      saveLocalNotes();
-
-      // Clear input fields
-      textarea.value = '';
-      textarea.style.height = 'auto';
-      state.selectedKidsForNew = [];
-      renderKidsChips('addKidsChips', state.selectedKidsForNew, toggleNewKidTag);
+      db.stores[db.activeStore].push(newItem);
+      save();
       
-      renderNotes();
-      showToast("Note added");
-      pushToGitHubDebounced();
+      // Preserve Bin for fast batch entry, clear item text, prevent scroll jump
+      itemInput.value = '';
+      itemInput.focus();
+      renderList();
     }
 
-    function cycleStatus(id, event) {
-      if (event) event.stopPropagation();
-      const note = state.notes.find(n => n.id === id);
-      if (!note) return;
-
-      const order = ['open', 'in_progress', 'complete'];
-      const nextIndex = (order.indexOf(note.status) + 1) % order.length;
-      note.status = order[nextIndex];
-
-      saveLocalNotes();
-      renderNotes();
-      pushToGitHubDebounced();
-    }
-
-    function openEditModal(id) {
-      const note = state.notes.find(n => n.id === id);
-      if (!note) return;
-
-      document.getElementById('editNoteId').value = note.id;
-      const textarea = document.getElementById('editNoteText');
-      textarea.value = note.text;
-      document.getElementById('editNoteStatus').value = note.status;
-
-      state.selectedKidsForEdit = [...(note.kids || [])];
-      renderKidsChips('editKidsChips', state.selectedKidsForEdit, toggleEditKidTag);
-
-      document.getElementById('editModal').classList.remove('hidden');
-      setTimeout(() => autoExpandTextarea(textarea), 50);
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-    }
-
-    function saveEditedNote() {
-      const id = parseInt(document.getElementById('editNoteId').value, 10);
-      const note = state.notes.find(n => n.id === id);
-      if (!note) return;
-
-      const text = document.getElementById('editNoteText').value.trim();
-      if (!text) {
-        showToast("Note content cannot be empty.");
-        return;
+    function toggleNeed(id) {
+      const items = db.stores[db.activeStore];
+      const target = items.find(i => i.id === id);
+      if (target) {
+        target.needed = !target.needed;
+        save();
+        renderList();
       }
-
-      note.text = text;
-      note.kids = [...state.selectedKidsForEdit];
-      note.status = document.getElementById('editNoteStatus').value;
-      note.updatedAt = new Date().toISOString();
-
-      saveLocalNotes();
-      renderNotes();
-      closeEditModal();
-      showToast("Note updated");
-      pushToGitHubDebounced();
     }
 
-    function promptDeleteNote(id) {
-      document.getElementById('deleteNoteId').value = id;
-      document.getElementById('deleteModal').classList.remove('hidden');
+    function editItem(id) {
+      const items = db.stores[db.activeStore];
+      const target = items.find(i => i.id === id);
+      if (!target) return;
+
+      const newBin = prompt("Edit Bin/Location:", target.bin);
+      if (newBin === null) return;
+      const newName = prompt("Edit Item Name:", target.name);
+      if (newName === null) return;
+
+      target.bin = newBin.trim().toUpperCase() || "--";
+      target.name = newName.trim();
+      save();
+      renderList();
     }
 
-    function closeDeleteModal() {
-      document.getElementById('deleteModal').classList.add('hidden');
-    }
+    function deleteItem(id) {
+      const items = db.stores[db.activeStore] || [];
+      const target = items.find(i => i.id === id);
+      const name = target ? target.name : 'this item';
 
-    function confirmDeleteNote() {
-      const id = parseInt(document.getElementById('deleteNoteId').value, 10);
-      state.notes = state.notes.filter(n => n.id !== id);
-      saveLocalNotes();
-      renderNotes();
-      closeDeleteModal();
-      showToast("Note deleted");
-      pushToGitHubDebounced();
-    }
-
-    /**
-     * SORTING AND FILTERING ENGINE
-     */
-    function getOldestKidRank(noteKids) {
-      if (!noteKids || noteKids.length === 0) return 999;
-      let minRank = 999;
-      noteKids.forEach(kidName => {
-        const k = CHILDREN.find(c => c.name === kidName);
-        if (k && k.index < minRank) minRank = k.index;
-      });
-      return minRank;
-    }
-
-    function getYoungestKidRank(noteKids) {
-      if (!noteKids || noteKids.length === 0) return -1;
-      let maxRank = -1;
-      noteKids.forEach(kidName => {
-        const k = CHILDREN.find(c => c.name === kidName);
-        if (k && k.index > maxRank) maxRank = k.index;
-      });
-      return maxRank;
-    }
-
-    function renderNotes() {
-      const container = document.getElementById('notesList');
-      const filterKid = document.getElementById('filterKid').value;
-      const filterStatus = document.getElementById('filterStatus').value;
-      const sortBy = document.getElementById('sortBy').value;
-      const query = document.getElementById('searchQuery').value.toLowerCase().trim();
-
-      // 1. Filter
-      let filtered = state.notes.filter(note => {
-        // Kid Filter
-        if (filterKid === 'UNTAGGED') {
-          if (note.kids && note.kids.length > 0) return false;
-        } else if (filterKid !== 'ALL') {
-          if (!note.kids || !note.kids.includes(filterKid)) return false;
-        }
-
-        // Status Filter
-        if (filterStatus !== 'ALL' && note.status !== filterStatus) return false;
-
-        // Search Query Filter
-        if (query) {
-          const matchText = note.text.toLowerCase().includes(query);
-          const matchKids = note.kids && note.kids.some(k => k.toLowerCase().includes(query));
-          if (!matchText && !matchKids) return false;
-        }
-
-        return true;
-      });
-
-      // 2. Sort
-      filtered.sort((a, b) => {
-        if (sortBy === 'kid_oldest') {
-          const rankA = getOldestKidRank(a.kids);
-          const rankB = getOldestKidRank(b.kids);
-          if (rankA !== rankB) return rankA - rankB;
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        } else if (sortBy === 'kid_youngest') {
-          const rankA = getYoungestKidRank(a.kids);
-          const rankB = getYoungestKidRank(b.kids);
-          if (rankA !== rankB) return rankB - rankA;
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        } else if (sortBy === 'status') {
-          const statusOrder = { 'open': 1, 'in_progress': 2, 'complete': 3 };
-          const sA = statusOrder[a.status] || 1;
-          const sB = statusOrder[b.status] || 1;
-          if (sA !== sB) return sA - sB;
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        } else if (sortBy === 'date_oldest') {
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        } else { // date_newest
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        }
-      });
-
-      // 3. Render DOM
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="empty-state">No matching notes found. Add one above!</div>`;
-        return;
+      if (confirm(`Delete "${name}" permanently?`)) {
+        db.stores[db.activeStore] = items.filter(i => i.id !== id);
+        save();
+        renderList();
       }
+    }
 
-      container.innerHTML = filtered.map(note => {
-        const dateStr = new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        
-        // Render Kid Badges
-        const kidBadgesHtml = (note.kids && note.kids.length > 0)
-          ? note.kids.map(kidName => {
-              const kidDef = CHILDREN.find(c => c.name === kidName);
-              const color = kidDef ? kidDef.color : '#888';
-              return `<span class="kid-badge" style="background-color: ${color};">${kidName}</span>`;
-            }).join('')
-          : `<span style="font-size: 10px; color: #666; font-style: italic;">No child tagged</span>`;
+    function renderList() {
+      const container = document.getElementById('itemList');
+      const items = db.stores[db.activeStore] || [];
 
-        // Render Status Button
-        let statusLabel = 'OPEN';
-        if (note.status === 'in_progress') statusLabel = 'IN PROGRESS';
-        if (note.status === 'complete') statusLabel = 'COMPLETE';
+      // Sort Order: Needed (Yes -> No) | Bin Ascending | Item Ascending
+      items.sort((a, b) => {
+        if (a.needed !== b.needed) return a.needed ? -1 : 1;
+        const binCmp = a.bin.localeCompare(b.bin, undefined, { numeric: true, sensitivity: 'base' });
+        if (binCmp !== 0) return binCmp;
+        return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+      });
 
-        return `
-          <div class="note-card status-${note.status}">
-            <div class="note-header">
-              <div class="kid-badges">${kidBadgesHtml}</div>
-              <button class="status-pill ${note.status}" onclick="cycleStatus(${note.id}, event)" title="Click to cycle status">
-                ${statusLabel}
-              </button>
-            </div>
-
-            <div class="note-body">${escapeHtml(note.text)}</div>
-
-            <div class="note-meta">
-              <span class="timestamp">${dateStr}</span>
-              <div class="actions">
-                <button class="btn-icon" onclick="openEditModal(${note.id})" title="Edit note">✏️</button>
-                <button class="btn-icon" onclick="promptDeleteNote(${note.id})" title="Delete note">🗑️</button>
-              </div>
-            </div>
+      container.innerHTML = items.map(item => `
+        <div class="row ${item.needed ? '' : 'unneeded'}">
+          <span class="bin">${item.bin}</span>
+          <span class="item-name">${item.name}</span>
+          <button class="toggle ${item.needed ? 'need' : 'done'}" onclick="toggleNeed(${item.id})">
+            ${item.needed ? 'NEED' : 'OFF'}
+          </button>
+          <div class="actions">
+            <button class="icon-btn" onclick="editItem(${item.id})">✏️</button>
+            <button class="icon-btn" onclick="deleteItem(${item.id})">🗑️</button>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
     }
 
-    /**
-     * GITHUB FINE-GRAINED TOKEN API INTEGRATION
-     */
-    function utf8ToBase64(str) {
-      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-        return String.fromCharCode('0x' + p1);
-      }));
-    }
-
-    function base64ToUtf8(str) {
-      return decodeURIComponent(Array.prototype.map.call(atob(str.replace(/\s/g, '')), function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-    }
-
-    function getApiUrl() {
-      const { owner, repo, path } = state.config;
-      return `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-    }
-
-    async function fetchFromGitHub() {
-      if (!isGitHubConfigured()) return;
-      
-      updateSyncBadge('syncing', 'Syncing...');
-      try {
-        const url = `${getApiUrl()}?ref=${encodeURIComponent(state.config.branch)}`;
-        const res = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${state.config.token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-
-        if (res.status === 200) {
-          const data = await res.json();
-          state.sha = data.sha;
-          const decodedContent = base64ToUtf8(data.content);
-          const remoteNotes = JSON.parse(decodedContent);
-
-          if (Array.isArray(remoteNotes)) {
-            state.notes = remoteNotes;
-            saveLocalNotes();
-            renderNotes();
-            updateSyncBadge('online', 'Synced');
-          }
-        } else if (res.status === 404) {
-          // File does not exist yet on repo, push local database to create it
-          await pushToGitHub();
-        } else {
-          const errData = await res.json();
-          updateSyncBadge('error', 'Sync Error');
-          console.error("GitHub Fetch Error:", errData);
+    // Force purge old Service Workers and clear cache storage to fix domain collisions
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
         }
-      } catch (err) {
-        updateSyncBadge('error', 'Offline / Error');
-        console.error("GitHub Fetch Network Exception:", err);
-      }
-    }
-
-    async function pushToGitHub() {
-      if (!isGitHubConfigured() || state.syncing) return;
-      
-      state.syncing = true;
-      updateSyncBadge('syncing', 'Saving...');
-
-      try {
-        const url = getApiUrl();
-        const contentB64 = utf8ToBase64(JSON.stringify(state.notes, null, 2));
-        
-        const payload = {
-          message: `Update family notes [${new Date().toLocaleTimeString()}]`,
-          content: contentB64,
-          branch: state.config.branch
-        };
-
-        if (state.sha) {
-          payload.sha = state.sha;
-        }
-
-        const res = await fetch(url, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${state.config.token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.status === 200 || res.status === 201) {
-          const data = await res.json();
-          state.sha = data.content.sha;
-          updateSyncBadge('online', 'Synced');
-        } else if (res.status === 409) {
-          // Conflict: re-fetch remote state
-          updateSyncBadge('syncing', 'Conflict...');
-          await fetchFromGitHub();
-        } else {
-          updateSyncBadge('error', 'Push Failed');
-        }
-      } catch (err) {
-        updateSyncBadge('error', 'Network Error');
-      } finally {
-        state.syncing = false;
-      }
-    }
-
-    let pushDebounceTimer = null;
-    function pushToGitHubDebounced() {
-      if (!isGitHubConfigured()) return;
-      clearTimeout(pushDebounceTimer);
-      pushDebounceTimer = setTimeout(() => {
-        pushToGitHub();
-      }, 1000);
-    }
-
-    function autoBackgroundSync() {
-      if (isGitHubConfigured() && !state.syncing) {
-        fetchFromGitHub();
-      }
-    }
-
-    function triggerManualSync() {
-      if (!isGitHubConfigured()) {
-        openSettings();
-        showToast("Configure GitHub PAT settings first.");
-        return;
-      }
-      fetchFromGitHub();
-    }
-
-    /**
-     * SETTINGS MODAL HANDLERS
-     */
-    function openSettings() {
-      document.getElementById('cfgToken').value = state.config.token || '';
-      document.getElementById('cfgOwner').value = state.config.owner || '';
-      document.getElementById('cfgRepo').value = state.config.repo || '';
-      document.getElementById('cfgPath').value = state.config.path || 'notes_db.json';
-      document.getElementById('cfgBranch').value = state.config.branch || 'main';
-      document.getElementById('settingsModal').classList.remove('hidden');
-    }
-
-    function closeSettings() {
-      document.getElementById('settingsModal').classList.add('hidden');
-    }
-
-    function saveSettings() {
-      state.config.token = document.getElementById('cfgToken').value.trim();
-      state.config.owner = document.getElementById('cfgOwner').value.trim();
-      state.config.repo = document.getElementById('cfgRepo').value.trim();
-      state.config.path = document.getElementById('cfgPath').value.trim() || 'notes_db.json';
-      state.config.branch = document.getElementById('cfgBranch').value.trim() || 'main';
-
-      localStorage.setItem('fn_github_config', JSON.stringify(state.config));
-      closeSettings();
-
-      if (isGitHubConfigured()) {
-        showToast("Settings saved. Syncing...");
-        fetchFromGitHub();
-      } else {
-        updateSyncBadge('local', 'Local Only');
-        showToast("Settings saved (Local Mode)");
-      }
-    }
-
-    async function testGitHubConnection() {
-      const token = document.getElementById('cfgToken').value.trim();
-      const owner = document.getElementById('cfgOwner').value.trim();
-      const repo = document.getElementById('cfgRepo').value.trim();
-
-      if (!token || !owner || !repo) {
-        showToast("Fill in Token, Owner, and Repo.");
-        return;
-      }
-
-      showToast("Testing API token...");
-      try {
-        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-        if (res.ok) {
-          showToast("✅ Connection successful!");
-        } else {
-          showToast("❌ Connection failed (Check token permissions)");
-        }
-      } catch (err) {
-        showToast("❌ Network error connecting to GitHub.");
-      }
-    }
-
-    function updateSyncBadge(type, text) {
-      const badge = document.getElementById('syncBadge');
-      const textSpan = document.getElementById('syncText');
-      
-      badge.className = `sync-badge ${type}`;
-      textSpan.textContent = text;
-      
-      const dot = badge.querySelector('.sync-dot');
-      if (type === 'syncing') dot.classList.add('pulse');
-      else dot.classList.remove('pulse');
-    }
-
-    /**
-     * TOAST NOTIFICATION UTILITY
-     */
-    let toastTimer;
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, function(m) {
-        return {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#039;'
-        }[m];
       });
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          for (let name of names) caches.delete(name);
+        });
+      }
     }
 
-    // Initialize Application on Window Load
-    window.onload = init;
+    init();
   </script>
 </body>
 </html>
